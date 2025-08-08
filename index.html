@@ -1,28 +1,104 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="es">
 <head>
-<title>Qubiq</title>
-<meta charset="utf-8">
-<meta name="description" content="Modelo 3D con variantes">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link type="text/css" href="./styles.css" rel="stylesheet"/>
+  <meta charset="UTF-8">
+  <title>Modelo 3D - Pantalla completa</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #ffffff;
+      font-family: Arial, sans-serif;
+
+      display: flex;
+      justify-content: center; /* Centrado horizontal */
+      align-items: center;     /* Centrado vertical */
+    }
+
+    model-viewer {
+      width: 100vw;
+      height: 100vh;
+      background-color: #ffffff;
+      border: none;
+    }
+
+    #title {
+      position: absolute;
+      top: 10px;
+      left: 20px;
+      right: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #222;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+      z-index: 10;
+    }
+
+    #modelSelector {
+      position: absolute;
+      top: 60px;
+      left: 20px;
+      padding: 10px;
+      font-size: 16px;
+      background-color: rgba(255, 255, 255, 0.85);
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      z-index: 10;
+    }
+
+    model-viewer::part(default-ar-button) {
+      position: absolute;
+      top: 110px; /* Justo debajo del selector */
+      left: 20px;
+      z-index: 10;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      color: #000;
+    }
+  </style>
 </head>
 <body>
 
-<!-- MODEL VIEWER -->
-<model-viewer id="myModel"
-src="bichos.glb"
-ar
-ar-modes="scene-viewer webxr quick-look"
-camera-controls
-tone-mapping="neutral"
-shadow-intensity="1">
+  <div id="title">Levipark21 - Línea Qubiq - Cerdito</div>
 
-<div class="progress-bar hide" slot="progress-bar">
-<div class="update-bar"></div>
-</div>
+  <select id="modelSelector">
+    <option value="bichos.glb"selected>QUBIQ</option>
+    <option value="coco.glb" >COCODRILO</option>
+    <option value="koa.glb">KOALA</option>
+    <option value="pingu.glb">PINGU</option>
 
-<!-- Librería Model Viewer -->
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+  </select>
+
+  <model-viewer
+    id="modelViewer"
+    src="bichos.glb"
+    alt="Modelo 3D de cerdito"
+    auto-rotate
+    camera-controls
+    ar
+    ar-modes="scene-viewer webxr quick-look"
+    ar-scale="auto"
+    loading="eager"
+  ></model-viewer>
+
+  <script>
+    const selector = document.getElementById('modelSelector');
+    const viewer = document.getElementById('modelViewer');
+
+    selector.addEventListener('change', () => {
+      viewer.src = selector.value;
+    });
+  </script>
+
 </body>
 </html>
