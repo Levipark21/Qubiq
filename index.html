@@ -1,27 +1,109 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>&lt;model-viewer&gt; template</title>
+    <title>Modelo 3D en AR</title>
     <meta charset="utf-8">
-    <meta name="description" content="&lt;model-viewer&gt; template">
+    <meta name="description" content="Visualiza un modelo 3D en Realidad Aumentada con model-viewer">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link type="text/css" href="./styles.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="./styles.css">
+    <style>
+      model-viewer {
+        width: 100%;
+        height: 100vh;
+        background-color: #fff;
+      }
+
+      #ar-button {
+        background-color: #000;
+        color: #fff;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        position: absolute;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+        cursor: pointer;
+      }
+
+      #ar-prompt {
+        position: absolute;
+        bottom: 80px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        z-index: 1;
+      }
+
+      .progress-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: rgba(0,0,0,0.1);
+      }
+
+      .update-bar {
+        height: 100%;
+        background: #3f51b5;
+        width: 0%;
+        transition: width 0.3s;
+      }
+
+      .hide {
+        display: none;
+      }
+    </style>
   </head>
   <body>
-    <!-- <model-viewer> HTML element -->
-    <model-viewer src="bichos.glb" ar ar-modes="scene-viewer webxr quick-look" camera-controls tone-mapping="neutral" poster="poster.webp" shadow-intensity="1">
-      <div class="progress-bar hide" slot="progress-bar">
-          <div class="update-bar"></div>
+    <!-- MODEL VIEWER -->
+    <model-viewer 
+      id="model"
+      src="bichos.glb"
+      ar
+      ar-modes="scene-viewer webxr quick-look"
+      camera-controls
+      tone-mapping="neutral"
+      poster="poster.webp"
+      shadow-intensity="1"
+      alt="Modelo 3D AR interactivo"
+      loading="eager"
+      auto-rotate
+    >
+      <div class="progress-bar" slot="progress-bar">
+        <div class="update-bar" id="update-bar"></div>
       </div>
+
       <button slot="ar-button" id="ar-button">
-          View in your space
+        Ver en tu espacio
       </button>
+
       <div id="ar-prompt">
-          <img src="ar_hand_prompt.png">
+        <img src="ar_hand_prompt.png" alt="AR prompt">
       </div>
-    </model-viewer>  
-    <script src="script.js"></script>
-    <!-- Loads <model-viewer> for browsers: -->
+    </model-viewer>
+
+    <!-- Script de barra de carga -->
+    <script>
+      const modelViewer = document.querySelector("#model");
+      const progressBar = document.querySelector(".progress-bar");
+      const updateBar = document.querySelector("#update-bar");
+
+      modelViewer.addEventListener("progress", (event) => {
+        const progress = event.detail.totalProgress;
+        updateBar.style.width = `${progress * 100}%`;
+        if (progress === 1) {
+          progressBar.classList.add("hide");
+        } else {
+          progressBar.classList.remove("hide");
+        }
+      });
+    </script>
+
+    <!-- <model-viewer> library -->
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
   </body>
 </html>
