@@ -13,15 +13,14 @@
       overflow: hidden;
       background-color: #ffffff;
       font-family: Arial, sans-serif;
-
       display: flex;
-      justify-content: center; /* Centrado horizontal */
-      align-items: center;     /* Centrado vertical */
+      justify-content: center;
+      align-items: center;
     }
 
     model-viewer {
-      width: 70vw;
-      height: 70vh;
+      width: 60vw;
+      height: 60vh;
       background-color: #ffffff;
       border: none;
     }
@@ -53,17 +52,26 @@
       z-index: 10;
     }
 
-    model-viewer::part(default-ar-button) {
+    /* BOTÓN AR PERSONALIZADO */
+    #ar-button {
       position: absolute;
-      top: 110px; /* Justo debajo del selector */
-      left: 20px;
-      z-index: 10;
-      background-color: rgba(255, 255, 255, 0.9);
-      padding: 8px 12px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-      color: #000;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      background-color: #006eff;
+      color: white;
+      padding: 16px 32px;
+      font-size: 20px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    #ar-button:hover {
+      background-color: #0055cc;
     }
   </style>
 </head>
@@ -72,24 +80,26 @@
   <div id="title">Levipark21 - Línea Qubiq</div>
 
   <select id="modelSelector">
-    <option value="bichos.glb"selected>QUBIQ</option>
-    <option value="coco.glb" >COCODRILO</option>
+    <option value="bichos.glb" selected>QUBIQ</option>
+    <option value="coco.glb">COCODRILO</option>
     <option value="koa.glb">KOALA</option>
     <option value="pingu.glb">PINGU</option>
-
   </select>
 
   <model-viewer
     id="modelViewer"
     src="bichos.glb"
-    alt="Modelo 3D de cerdito"
+    alt="Modelo 3D"
     auto-rotate
     camera-controls
     ar
     ar-modes="scene-viewer webxr quick-look"
     ar-scale="auto"
     loading="eager"
-  ></model-viewer>
+  >
+    <!-- Botón AR personalizado -->
+    <button slot="ar-button" id="ar-button">Ver en tu espacio</button>
+  </model-viewer>
 
   <script>
     const selector = document.getElementById('modelSelector');
@@ -102,3 +112,4 @@
 
 </body>
 </html>
+
