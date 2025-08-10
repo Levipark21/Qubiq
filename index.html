@@ -80,15 +80,14 @@
   <div id="title">Levipark21 - Línea Qubiq</div>
 
   <select id="modelSelector">
-    <option value="bichos.glb" selected>QUBIQ</option>
-    <option value="coco.glb">COCODRILO</option>
-    <option value="koa.glb">KOALA</option>
-    <option value="pingu.glb">PINGU</option>
+    <option value="bichos">QUBIQ</option>
+    <option value="coco">COCODRILO</option>
+    <option value="koa">KOALA</option>
+    <option value="pingu">PINGU</option>
   </select>
 
   <model-viewer
     id="modelViewer"
-    src="bichos.glb"
     alt="Modelo 3D"
     auto-rotate
     camera-controls
@@ -97,7 +96,6 @@
     ar-scale="auto"
     loading="eager"
   >
-    <!-- Botón AR personalizado -->
     <button slot="ar-button" id="ar-button">Ver en tu espacio</button>
   </model-viewer>
 
@@ -105,10 +103,27 @@
     const selector = document.getElementById('modelSelector');
     const viewer = document.getElementById('modelViewer');
 
+    // Detectar si es iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const extension = isIOS ? '.usdz' : '.glb';
+
+    // Función para cargar modelo
+    function loadModel(baseName) {
+      viewer.src = baseName + extension;
+    }
+
+    // Cargar el primero por defecto
+    loadModel(selector.value);
+
+    // Cambiar modelo cuando se seleccione otro
     selector.addEventListener('change', () => {
-      viewer.src = selector.value;
+      loadModel(selector.value);
     });
   </script>
+
+</body>
+</html>
+
 
 </body>
 </html>
