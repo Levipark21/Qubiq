@@ -102,29 +102,65 @@
   <script>
     const selector = document.getElementById('modelSelector');
     const viewer = document.getElementById('modelViewer');
+    const arButton = document.getElementById('ar-button');
 
-    // Detectar si es iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const extension = isIOS ? '.usdz' : '.glb';
+    const modelos = {
+      bichos: 'bichos.glb',
+      coco: 'coco.glb',
+      koa: 'koa.glb',
+      pingu: 'pingu.glb'
+    };
 
-    // Función para cargar modelo
-    function loadModel(baseName) {
-      viewer.src = baseName + extension;
+    let currentBlobUrl = null;
+
+    // Función para cargar GLB vía fetch y asignar blob URL al model-viewer
+    async function loadGLBModel(name) {
+      try {
+        const response = await fetch(modelos[name]);
+        if (!response.ok) throw new Error(`Error al cargar ${modelos[name]}: ${response.statusText}`);
+
+        const arrayBuffer = await response.arrayBuffer();
+        const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
+        const url = URL.createObjectURL(blob);
+
+        // Limpiar blob URL anterior para liberar memoria
+        if (currentBlobUrl) {
+          URL.revokeObjectURL(currentBlobUrl);
+        }
+        currentBlobUrl = url;
+
+        // Asignar blob URL a src y ios-src para forzar uso GLB en iOS también
+        viewer.src = url;
+        viewer.setAttribute('ios-src', url);
+
+        viewer.alt = name;
+
+      } catch (error) {
+        console.error(error);
+        alert('Error cargando el modelo GLB.');
+      }
     }
 
-    // Cargar el primero por defecto
-    loadModel(selector.value);
-
-    // Cambiar modelo cuando se seleccione otro
+    // Al cambiar selección, cargar modelo GLB con fetch
     selector.addEventListener('change', () => {
-      loadModel(selector.value);
+      loadGLBModel(selector.value);
+    });
+
+    // Carga inicial
+    loadGLBModel(selector.value);
+
+    // Botón AR: usar el botón integrado de model-viewer
+    arButton.addEventListener('click', () => {
+      if (viewer.activateAR) {
+        viewer.activateAR();
+      } else if (viewer.showAR) {
+        viewer.showAR();
+      } else {
+        // fallback: dispatch event
+        viewer.dispatchEvent(new CustomEvent('ar-button-click'));
+      }
     });
   </script>
 
 </body>
 </html>
-
-
-</body>
-</html>
-
