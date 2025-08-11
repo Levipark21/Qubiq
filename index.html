@@ -2,76 +2,28 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Modelo 3D - Pantalla completa</title>
+  <title>Modelo 3D - AJAX</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #ffffff;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      display: flex; justify-content: center; align-items: center;
+      background-color: #fff; font-family: Arial, sans-serif;
     }
-
     model-viewer {
-      width: 60vw;
-      height: 60vh;
-      background-color: #ffffff;
-      border: none;
+      width: 60vw; height: 60vh; background: #fff; border: none;
     }
-
-    #title {
-      position: absolute;
-      top: 10px;
-      left: 20px;
-      right: 20px;
-      font-size: 20px;
-      font-weight: bold;
-      color: #222;
-      background-color: rgba(255, 255, 255, 0.9);
-      padding: 10px;
-      border-radius: 6px;
-      text-align: center;
-      z-index: 10;
+    #title, #modelSelector {
+      position: absolute; left: 20px; background: rgba(255,255,255,0.9);
+      padding: 8px 12px; border-radius: 5px; z-index: 10; border: 1px solid #ccc;
     }
-
-    #modelSelector {
-      position: absolute;
-      top: 60px;
-      left: 20px;
-      padding: 10px;
-      font-size: 16px;
-      background-color: rgba(255, 255, 255, 0.85);
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      z-index: 10;
-    }
-
-    /* BOTÓN AR PERSONALIZADO */
-    #ar-button {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 20;
-      background-color: #006eff;
-      color: white;
-      padding: 16px 32px;
-      font-size: 20px;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-
-    #ar-button:hover {
-      background-color: #0055cc;
+    #title { top: 10px; font-size: 18px; font-weight: bold; }
+    #modelSelector { top: 60px; font-size: 14px; }
+    #loader {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.75); color: #fff; padding: 6px 12px;
+      border-radius: 4px; font-size: 14px; display: none;
     }
   </style>
 </head>
@@ -80,49 +32,56 @@
   <div id="title">Levipark21 - Línea Qubiq</div>
 
   <select id="modelSelector">
-    <option value="bichos">QUBIQ</option>
-    <option value="coco">COCODRILO</option>
-    <option value="koa">KOALA</option>
-    <option value="pingu">PINGU</option>
+    <option value="bichos.glb" selected>Qubiq</option>
+    <option value="coco.glb">Cocodrilo</option>
+    <option value="koa.glb">Koala</option>
+    <option value="pingu.glb">Pingüino</option>
   </select>
 
   <model-viewer
     id="modelViewer"
-    alt="Modelo 3D"
+    alt="Modelo 3D de cerdito"
     auto-rotate
     camera-controls
     ar
-    ar-modes="scene-viewer webxr"
+    ar-modes="scene-viewer webxr quick-look"
     ar-scale="auto"
     loading="eager"
-  >
-    <button slot="ar-button" id="ar-button">Ver en tu espacio</button>
-  </model-viewer>
+  ></model-viewer>
+
+  <div id="loader">Cargando modelo...</div>
 
   <script>
     const selector = document.getElementById('modelSelector');
     const viewer = document.getElementById('modelViewer');
+    const loader = document.getElementById('loader');
 
-    // Forzar siempre GLB
-    const extension = '.glb';
-
-    // Función para cargar con AJAX y Blob
-    async function loadModel(baseName) {
+    // Función para cargar modelo vía fetch
+    async function loadModel(file) {
+      loader.style.display = 'block'; // Mostrar loader
       try {
-        const response = await fetch(baseName + extension);
-        if (!response.ok) throw new Error('Error al cargar el modelo');
+        const response = await fetch(file);
+        if (!response.ok) throw new Error('Error al descargar el modelo');
         const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        viewer.src = url;
-      } catch (err) {
-        console.error('Error cargando modelo:', err);
+        const objectURL = URL.createObjectURL(blob);
+
+        viewer.src = objectURL; // Asignar al model-viewer
+
+        // Limpiar la URL temporal anterior (evita fuga de memoria)
+        viewer.addEventListener('load', () => {
+          loader.style.display = 'none';
+        }, { once: true });
+
+      } catch (error) {
+        loader.textContent = 'Error al cargar el modelo';
+        console.error(error);
       }
     }
 
-    // Cargar el primero por defecto
+    // Cargar el modelo inicial
     loadModel(selector.value);
 
-    // Cambiar modelo cuando se seleccione otro
+    // Cambiar modelo al seleccionar
     selector.addEventListener('change', () => {
       loadModel(selector.value);
     });
