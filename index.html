@@ -91,7 +91,11 @@ async function loadModel(name) {
 
   // Three.js: limpia escena anterior
   if(three.anim) cancelAnimationFrame(three.anim);
-  if(three.renderer) { three.renderer.dispose(); threeContainer.innerHTML = ""; }
+  if(three.renderer) { 
+    three.renderer.dispose(); 
+    threeContainer.innerHTML = ""; 
+  }
+
   three.renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
   three.renderer.setClearColor(0xffffff,1);
   three.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -114,7 +118,13 @@ async function loadModel(name) {
   three.scene.add(dirLight);
 
   let loaderGLB = new GLTFLoader();
-  loaderGLB.load(name, gltf=>{
+
+  // --- CORRECCIÓN CLAVE: asegurarse que la ruta es relativa al repositorio ---
+  // GitHub Pages sirve desde la raíz, así que las rutas relativas aquí funcionan si los .glb están en la misma carpeta que index.html.
+  // Si estuvieran en una subcarpeta, por ejemplo "models/", cambiar a 'models/' + name
+  const modelPath = './' + name;
+
+  loaderGLB.load(modelPath, gltf=>{
     three.model = gltf.scene;
     let box = new THREE.Box3().setFromObject(three.model);
     let center = box.getCenter(new THREE.Vector3());
@@ -177,7 +187,6 @@ fullscreenBtn.addEventListener('click', ()=>{
 // Mostrar botón AR solo si soporta AR-modes
 if(isMobile) arBtn.style.display = '';
 arBtn.addEventListener('click', ()=>{
-  // Prepara y muestra el modelo en AR
   modelViewer.src = selector.value;
   showAR();
   modelViewer.addEventListener('ar-status', e=>{
@@ -196,7 +205,6 @@ window.addEventListener('resize', ()=>{
   }
 });
 
-// Joystick implementation
 function setupJoysticks() {
   joystickContainer.innerHTML = `
     <div id="moveJoystick" style="position:absolute;left:40px;bottom:40px;width:120px;height:120px;pointer-events:auto;"></div>
@@ -247,33 +255,26 @@ function createJoystick(container, onChange) {
     onChange(0, 0);
     dragging = false;
   }
-  container.addEventListener('touchstart', e => {
+  container.addEventListener('pointerdown', e=>{
     dragging = true;
-    if (e.touches) {
-      startX = e.touches[0].clientX - lastX;
-      startY = e.touches[0].clientY - lastY;
-    }
+    startX = e.clientX;
+    startY = e.clientY;
+    e.preventDefault();
   });
-  container.addEventListener('touchmove', e => {
-    if (!dragging) return;
+  window.addEventListener('pointermove', e=>{
+    if(!dragging) return;
     handleMove(e);
     e.preventDefault();
-  }, { passive: false });
-  container.addEventListener('touchend', e => { handleEnd(); });
-  container.addEventListener('mousedown', e => {
-    dragging = true;
-    startX = e.clientX - lastX;
-    startY = e.clientY - lastY;
-    document.addEventListener('mousemove', mouseMove);
-    document.addEventListener('mouseup', mouseUp);
   });
-  function mouseMove(e) { if (dragging) handleMove(e); }
-  function mouseUp(e) { handleEnd(); document.removeEventListener('mousemove', mouseMove); document.removeEventListener('mouseup', mouseUp);}
+  window.addEventListener('pointerup', e=>{
+    if(!dragging) return;
+    handleEnd();
+    e.preventDefault();
+  });
 }
 
-// Inicializar
-showThree();
 loadModel(selector.value);
+
 </script>
 </body>
 </html>
