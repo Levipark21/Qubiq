@@ -2,279 +2,90 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Qubiq 3D/AR Viewer</title>
-  <!-- Model Viewer para AR -->
+  <title>Modelo 3D - AJAX</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    html, body {margin:0; padding:0; width:100vw; height:100vh; background:#fff;}
-    #threeContainer, model-viewer {
-      width: 100vw; height: 100vh;
-      position: absolute; left: 0; top: 0;
-      background: #fff; border: none; display: none;
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      display: flex; justify-content: center; align-items: center;
+      background-color: #fff; font-family: Arial, sans-serif;
     }
-    #threeContainer { display: block; }
-    #modelSelector, #modeBtn, #fullscreenBtn, #arBtn, #title {
-      position: fixed; z-index: 10; background: rgba(255,255,255,0.96); border-radius: 8px; border:1px solid #ccc; padding: 8px 14px; font-size: 16px;
+    model-viewer {
+      width: 60vw; height: 60vh; background: #fff; border: none;
     }
-    #modelSelector { left: 20px; top: 20px; }
-    #modeBtn { left: 20px; top: 70px; }
-    #fullscreenBtn { left: 20px; top: 120px; }
-    #arBtn { left: 20px; top: 170px; }
-    #title { right: 20px; top: 20px; font-weight: bold; }
-    #loader { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#222a; color:#fff; padding:8px 20px; border-radius:6px; display:none; z-index:11;}
-    #joystickContainer { display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; pointer-events:none; z-index:20; }
+    #title, #modelSelector {
+      position: absolute; left: 20px; background: rgba(255,255,255,0.9);
+      padding: 8px 12px; border-radius: 5px; z-index: 10; border: 1px solid #ccc;
+    }
+    #title { top: 10px; font-size: 18px; font-weight: bold; }
+    #modelSelector { top: 60px; font-size: 14px; }
+    #loader {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.75); color: #fff; padding: 6px 12px;
+      border-radius: 4px; font-size: 14px; display: none;
+    }
   </style>
 </head>
 <body>
+
+  <div id="title">Levipark21 - Línea Qubiq</div>
+
   <select id="modelSelector">
     <option value="bichos.glb" selected>Qubiq</option>
     <option value="coco.glb">Cocodrilo</option>
     <option value="koa.glb">Koala</option>
     <option value="pingu.glb">Pingüino</option>
   </select>
-  <button id="modeBtn">Modo: Orbitar</button>
-  <button id="fullscreenBtn">Pantalla completa</button>
-  <button id="arBtn" style="display:none;">Ver en AR</button>
-  <div id="title">Levipark21 - Línea Qubiq</div>
-  <div id="loader">Cargando modelo...</div>
 
-  <div id="threeContainer"></div>
-
-  <!-- Model Viewer para AR (solo visible cuando se pulsa el botón) -->
-  <model-viewer id="modelViewer"
-    auto-rotate camera-controls ar
+  <model-viewer
+    id="modelViewer"
+    alt="Modelo 3D de cerdito"
+    auto-rotate
+    camera-controls
+    ar
     ar-modes="scene-viewer webxr quick-look"
     ar-scale="auto"
-    exposure="1.1"
-    style="display:none"
-    alt="Modelo 3D"
+    loading="eager"
   ></model-viewer>
 
-  <div id="joystickContainer"></div>
+  <div id="loader">Cargando modelo...</div>
 
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/controls/OrbitControls.js';
+  <script>
+    const selector = document.getElementById('modelSelector');
+    const viewer = document.getElementById('modelViewer');
+    const loader = document.getElementById('loader');
 
-const selector = document.getElementById('modelSelector');
-const loader = document.getElementById('loader');
-const modelViewer = document.getElementById('modelViewer');
-const threeContainer = document.getElementById('threeContainer');
-const modeBtn = document.getElementById('modeBtn');
-const fullscreenBtn = document.getElementById('fullscreenBtn');
-const arBtn = document.getElementById('arBtn');
-const joystickContainer = document.getElementById('joystickContainer');
+    // Función para cargar modelo vía fetch
+    async function loadModel(file) {
+      loader.style.display = 'block'; // Mostrar loader
+      try {
+        const response = await fetch(file);
+        if (!response.ok) throw new Error('Error al descargar el modelo');
+        const blob = await response.blob();
+        const objectURL = URL.createObjectURL(blob);
 
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        viewer.src = objectURL; // Asignar al model-viewer
 
-let three = { renderer:null, scene:null, camera:null, controls:null, model:null, anim:null };
-let recorrido = false;
-let movement = { forward: 0, right: 0, turnX: 0, turnY: 0 };
-let joystickActive = false;
+        // Limpiar la URL temporal anterior (evita fuga de memoria)
+        viewer.addEventListener('load', () => {
+          loader.style.display = 'none';
+        }, { once: true });
 
-function showThree() {
-  modelViewer.style.display = 'none';
-  threeContainer.style.display = '';
-  joystickContainer.style.display = recorrido ? '' : 'none';
-}
-
-function showAR() {
-  modelViewer.style.display = '';
-  threeContainer.style.display = 'none';
-  joystickContainer.style.display = 'none';
-}
-
-async function loadModel(name) {
-  loader.textContent = 'Cargando modelo...';
-  loader.style.display = 'block';
-
-  // Three.js: limpia escena anterior
-  if(three.anim) cancelAnimationFrame(three.anim);
-  if(three.renderer) { 
-    three.renderer.dispose(); 
-    threeContainer.innerHTML = ""; 
-  }
-
-  three.renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
-  three.renderer.setClearColor(0xffffff,1);
-  three.renderer.setSize(window.innerWidth, window.innerHeight);
-  threeContainer.appendChild(three.renderer.domElement);
-
-  three.scene = new THREE.Scene();
-  three.camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
-  three.camera.position.set(0, 1.2, 2.5);
-
-  three.controls = new OrbitControls(three.camera, three.renderer.domElement);
-  three.controls.enableDamping = true;
-  three.controls.dampingFactor = 0.1;
-  three.controls.enablePan = false;
-  three.controls.target.set(0, 0.5, 0);
-  three.controls.enabled = !recorrido;
-
-  three.scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.1));
-  let dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  dirLight.position.set(2,6,4);
-  three.scene.add(dirLight);
-
-  let loaderGLB = new GLTFLoader();
-
-  // --- CORRECCIÓN CLAVE: asegurarse que la ruta es relativa al repositorio ---
-  // GitHub Pages sirve desde la raíz, así que las rutas relativas aquí funcionan si los .glb están en la misma carpeta que index.html.
-  // Si estuvieran en una subcarpeta, por ejemplo "models/", cambiar a 'models/' + name
-  const modelPath = './' + name;
-
-  loaderGLB.load(modelPath, gltf=>{
-    three.model = gltf.scene;
-    let box = new THREE.Box3().setFromObject(three.model);
-    let center = box.getCenter(new THREE.Vector3());
-    three.model.position.sub(center);
-    three.scene.add(three.model);
-    loader.style.display = 'none';
-    animateThree();
-  }, undefined, err=>{
-    loader.textContent = 'Error al cargar el modelo';
-    console.error(err);
-  });
-
-  function animateThree() {
-    three.anim = requestAnimationFrame(animateThree);
-
-    if(recorrido && three.camera) {
-      const moveSpeed = 0.06;
-      const turnSpeed = 0.025;
-      const yaw = three.camera.rotation.y;
-      three.camera.position.x += (Math.sin(yaw) * movement.forward + Math.cos(yaw) * movement.right) * moveSpeed;
-      three.camera.position.z += (Math.cos(yaw) * movement.forward - Math.sin(yaw) * movement.right) * moveSpeed;
-      three.camera.rotation.y -= movement.turnX * turnSpeed;
-      three.camera.rotation.x -= movement.turnY * turnSpeed;
-      three.camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, three.camera.rotation.x));
+      } catch (error) {
+        loader.textContent = 'Error al cargar el modelo';
+        console.error(error);
+      }
     }
 
-    if(three.model && !recorrido) three.model.rotation.y += 0.012;
-    if(three.controls && three.controls.enabled) three.controls.update();
-    three.renderer.render(three.scene, three.camera);
-  }
-}
+    // Cargar el modelo inicial
+    loadModel(selector.value);
 
-selector.addEventListener('change', ()=>{
-  showThree();
-  loadModel(selector.value);
-  recorrido = false;
-  modeBtn.textContent = "Modo: Orbitar";
-  if(three.controls) three.controls.enabled = true;
-  joystickContainer.style.display = 'none';
-  joystickActive = false;
-});
+    // Cambiar modelo al seleccionar
+    selector.addEventListener('change', () => {
+      loadModel(selector.value);
+    });
+  </script>
 
-modeBtn.addEventListener('click', ()=>{
-  recorrido = !recorrido;
-  modeBtn.textContent = "Modo: " + (recorrido ? "Recorrido" : "Orbitar");
-  if(three.controls) three.controls.enabled = !recorrido;
-  joystickContainer.style.display = recorrido ? '' : 'none';
-  joystickActive = recorrido;
-  if(recorrido) setupJoysticks();
-  else { movement = {forward:0,right:0,turnX:0,turnY:0}; joystickContainer.innerHTML=""; }
-});
-
-fullscreenBtn.addEventListener('click', ()=>{
-  let el = threeContainer;
-  if(document.fullscreenElement) document.exitFullscreen();
-  else if(el.requestFullscreen) el.requestFullscreen();
-  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-});
-
-// Mostrar botón AR solo si soporta AR-modes
-if(isMobile) arBtn.style.display = '';
-arBtn.addEventListener('click', ()=>{
-  modelViewer.src = selector.value;
-  showAR();
-  modelViewer.addEventListener('ar-status', e=>{
-    if(e.detail.status === 'not-presenting') showThree();
-  });
-  modelViewer.addEventListener('load', ()=>{ loader.style.display='none'; }, {once:true});
-  loader.style.display = 'block';
-  loader.textContent = 'Cargando AR...';
-});
-
-window.addEventListener('resize', ()=>{
-  if(three.renderer) {
-    three.renderer.setSize(window.innerWidth, window.innerHeight);
-    if(three.camera) three.camera.aspect = window.innerWidth/window.innerHeight;
-    if(three.camera) three.camera.updateProjectionMatrix();
-  }
-});
-
-function setupJoysticks() {
-  joystickContainer.innerHTML = `
-    <div id="moveJoystick" style="position:absolute;left:40px;bottom:40px;width:120px;height:120px;pointer-events:auto;"></div>
-    <div id="lookJoystick" style="position:absolute;right:40px;bottom:40px;width:120px;height:120px;pointer-events:auto;"></div>
-  `;
-  createJoystick(document.getElementById('moveJoystick'), (x, y) => {
-    movement.forward = -y;
-    movement.right = x;
-  });
-  createJoystick(document.getElementById('lookJoystick'), (x, y) => {
-    movement.turnX = x;
-    movement.turnY = y;
-  });
-}
-function createJoystick(container, onChange) {
-  let dragging = false, startX = 0, startY = 0, lastX = 0, lastY = 0;
-  const knob = document.createElement('div');
-  Object.assign(knob.style, {
-    width: '60px', height: '60px', background: '#8888', borderRadius: '50%',
-    position: 'absolute', left: '30px', top: '30px', transform: 'translate(0,0)', touchAction: 'none'
-  });
-  container.style.background = '#ccc6';
-  container.style.borderRadius = '50%';
-  container.appendChild(knob);
-  function handleMove(e) {
-    let clientX, clientY;
-    if (e.touches) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-    const dx = clientX - startX;
-    const dy = clientY - startY;
-    const radius = 40;
-    let dist = Math.sqrt(dx*dx + dy*dy);
-    let angle = Math.atan2(dy, dx);
-    let r = Math.min(dist, radius);
-    let x = Math.cos(angle) * r;
-    let y = Math.sin(angle) * r;
-    knob.style.transform = `translate(${x}px,${y}px)`;
-    onChange(x/radius, y/radius);
-    lastX = x; lastY = y;
-  }
-  function handleEnd() {
-    knob.style.transform = `translate(0,0)`;
-    onChange(0, 0);
-    dragging = false;
-  }
-  container.addEventListener('pointerdown', e=>{
-    dragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    e.preventDefault();
-  });
-  window.addEventListener('pointermove', e=>{
-    if(!dragging) return;
-    handleMove(e);
-    e.preventDefault();
-  });
-  window.addEventListener('pointerup', e=>{
-    if(!dragging) return;
-    handleEnd();
-    e.preventDefault();
-  });
-}
-
-loadModel(selector.value);
-
-</script>
 </body>
 </html>
