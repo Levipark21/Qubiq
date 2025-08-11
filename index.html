@@ -5,10 +5,6 @@
   <title>Qubiq 3D/AR Viewer</title>
   <!-- Model Viewer para AR -->
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <!-- Three.js + GLTFLoader + OrbitControls vía CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/examples/js/controls/OrbitControls.js"></script>
   <style>
     html, body {margin:0; padding:0; width:100vw; height:100vh; background:#fff;}
     #threeContainer, model-viewer {
@@ -31,10 +27,10 @@
 </head>
 <body>
   <select id="modelSelector">
-    <option value="/Qubiq/bichos.glb" selected>Qubiq</option>
-    <option value="/Qubiq/coco.glb">Cocodrilo</option>
-    <option value="/Qubiq/koa.glb">Koala</option>
-    <option value="/Qubiq/pingu.glb">Pingüino</option>
+    <option value="bichos.glb" selected>Qubiq</option>
+    <option value="coco.glb">Cocodrilo</option>
+    <option value="koa.glb">Koala</option>
+    <option value="pingu.glb">Pingüino</option>
   </select>
   <button id="modeBtn">Modo: Orbitar</button>
   <button id="fullscreenBtn">Pantalla completa</button>
@@ -56,7 +52,11 @@
 
   <div id="joystickContainer"></div>
 
-<script>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/controls/OrbitControls.js';
+
 const selector = document.getElementById('modelSelector');
 const loader = document.getElementById('loader');
 const modelViewer = document.getElementById('modelViewer');
@@ -101,7 +101,7 @@ async function loadModel(name) {
   three.camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
   three.camera.position.set(0, 1.2, 2.5);
 
-  three.controls = new THREE.OrbitControls(three.camera, three.renderer.domElement);
+  three.controls = new OrbitControls(three.camera, three.renderer.domElement);
   three.controls.enableDamping = true;
   three.controls.dampingFactor = 0.1;
   three.controls.enablePan = false;
@@ -113,7 +113,7 @@ async function loadModel(name) {
   dirLight.position.set(2,6,4);
   three.scene.add(dirLight);
 
-  let loaderGLB = new THREE.GLTFLoader();
+  let loaderGLB = new GLTFLoader();
   loaderGLB.load(name, gltf=>{
     three.model = gltf.scene;
     let box = new THREE.Box3().setFromObject(three.model);
